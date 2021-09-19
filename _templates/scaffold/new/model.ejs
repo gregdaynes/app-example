@@ -1,0 +1,80 @@
+---
+to: app/src/models/<%= h.changeCase.paramCase(h.inflection.singularize(name)) %>.js
+---
+<%
+  plural = h.changeCase.camelCase(h.inflection.pluralize(name))
+  Plural = h.changeCase.pascalCase(h.inflection.pluralize(Name))
+  singular = h.changeCase.camelCase(h.inflection.singularize(name))
+  Singular = h.changeCase.pascalCase(h.inflection.singularize(Name))
+%>const { Model } = require('../lib/database')
+
+module.exports = class <%= Singular %> extends Model {
+  static get tableName () {
+    return '<%= plural %>'
+  }
+
+  static get idColumn () {
+    return 'id'
+  }
+
+  static get jsonSchema () {
+    return {
+      type: 'object',
+      required: [
+        'idOrganization',
+      ],
+      properties: {
+        idOrganization: {
+          type: 'string',
+        },
+      },
+    }
+  }
+
+  static get relationMappings () {
+    return {
+      organization: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: 'organization',
+        join: {
+          from: '<%= plural %>.idOrganization',
+          to: 'organizations.id',
+        },
+      },
+
+      // Example parent/child relation of same type
+      // 'parent<%= Singular %>': {
+      //   relation: Model.BelongsToOneRelation,
+      //   modelClass: '<%= singular %>',
+      //   join: {
+      //     from: '<%= plural %>.id<%= Singular %>Parent',
+      //     to: '<%= plural %>.id',
+      //   },
+      // },
+
+      // Example belongs to one relation
+      // organization: {
+      //   relation: Model.BelongsToOneRelation,
+      //   modelClass: 'organization',
+      //   join: {
+      //     from: '<%= plural %>.idOrganization',
+      //     to: 'organizations.id',
+      //   },
+      // },
+
+      // Example has many relation
+      // accounts: {
+      //   relation: Model.ManyToManyRelation,
+      //   modelClass: 'account',
+      //   join: {
+      //     from: '<%= plural %>.id',
+      //     through: {
+      //       from: 'accounts_<%= plural %>.id<%= Singular %>',
+      //       to: 'accounts_<%= plural %>.idAccount',
+      //     },
+      //     to: 'accounts.id',
+      //   },
+      // }
+    }
+  }
+}

@@ -1,0 +1,249 @@
+---
+to: api/src/routes/<%= h.changeCase.paramCase(h.inflection.pluralize(name)) %>.test.js
+---
+<%
+  plural = h.changeCase.camelCase(h.inflection.pluralize(name))
+  Plural = h.changeCase.pascalCase(h.inflection.pluralize(Name))
+  singular = h.changeCase.camelCase(h.inflection.singularize(name))
+  Singular = h.changeCase.pascalCase(h.inflection.singularize(Name))
+%>const { database, assert, factories, patterns } = require('../../test')
+const services = require('@aftercoffee/app').services
+const build = require('../index.js')
+
+describe('Route /<%= plural %>', function () {
+  before(async function () {
+    await database.setup()
+    this.app = await build()
+    this.initializeAccountSession = factories.TestAccount.bind(null, this.app.jwt.sign)
+  })
+
+  after(async function () {
+    await database.teardown()
+    await this.app.close()
+  })
+
+  describe('POST:/', function () {
+    before(async function () {
+      const account = await this.initializeAccountSession()
+      this.token = account.token
+      this.organization = account.organization
+    })
+
+    it.skip('creates a <%= singular %> and returns the data', async function () {
+      const test<%= Singular %> = factories.<%= Singular %>({
+        idOrganization: this.organization.id,
+      })
+
+      const response = await this.app.inject({
+        method: 'POST',
+        url: '/<%= plural %>',
+        cookies: {
+          token: this.token,
+        },
+        body: test<%= Singular %>,
+      })
+
+      assert.strictEqual(response.statusCode, 200)
+      assert.match(response.json().id, patterns.uuid)
+      assert.deepInclude(response.json(), test<%= Singular %>)
+    })
+  })
+
+  describe('GET:/', function () {
+    before(async function () {
+      const account = await this.initializeAccountSession()
+      this.token = account.token
+      this.organization = account.organization
+    })
+
+    it.skip('returns a list of <%= plural %> visible to the session', async function () {
+      const idOrganization = this.organization.id
+      const test<%= Singular %>One = await factories.<%= Singular %>({ idOrganization }).insert()
+      const test<%= Singular %>Two = await factories.<%= Singular %>({ idOrganization }).insert()
+
+      const response = await this.app.inject({
+        method: 'GET',
+        url: '/<%= plural %>',
+        cookies: {
+          token: this.token,
+        },
+      })
+
+      assert.strictEqual(response.statusCode, 200)
+      assert.strictEqual(response.json().length, 2)
+      assert.deepInclude(response.json()[0], {
+        // check test<%= Singular %>One here
+      })
+      assert.deepInclude(response.json()[1], {
+        // check test<%= Singular %>Two here
+      })
+    })
+  })
+
+  describe('GET:/{id<%= Singular %>}', function () {
+    before(async function () {
+      const account = await this.initializeAccountSession()
+      const otherAccount = await this.initializeAccountSession()
+
+      this.token = account.token
+      this.organization = account.organization
+      this.otherOrganization = otherAccount.organization
+    })
+
+    it.skip('returns specific <%= singular %> data when visible to the session', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>({ idOrganization: this.organization.id }).insert()
+
+      const response = await this.app.inject({
+        method: 'GET',
+        url: '/<%= plural %>/' + test<%= Singular %>.id,
+        cookies: {
+          token: this.token,
+        },
+      })
+
+      assert.strictEqual(response.statusCode, 200)
+      assert.deepInclude(response.json(), {
+        // add comparisons here
+      })
+    })
+
+    it.skip('returns specific deleted <%= singular %> when visible to the session', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>({ idOrganization: this.organization.id }).insert()
+      await test<%= Singular %>.delete()
+
+      const response = await this.app.inject({
+        method: 'GET',
+        url: '/<%= plural %>/' + test<%= Singular %>.id,
+        cookies: {
+          token: this.token,
+        },
+      })
+
+      assert.strictEqual(response.statusCode, 200)
+      assert.deepInclude(response.json(), {
+        id: test<%= Singular %>.id,
+      })
+    })
+
+    it.skip('returns an empty object when resource is not visible to the session', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>({ idOrganization: this.otherOrganization.id }).insert()
+
+      const response = await this.app.inject({
+        method: 'GET',
+        url: '/<%= plural %>/' + test<%= Singular %>.id,
+        cookies: {
+          token: this.token,
+        },
+      })
+
+      assert.strictEqual(response.statusCode, 200)
+      assert.deepInclude(response.json(), {})
+    })
+  })
+
+  describe('PUT:/{id<%= Singular %>}', function () {
+    before(async function () {
+      const account = await this.initializeAccountSession()
+      const otherAccount = await this.initializeAccountSession()
+
+      this.token = account.token
+      this.organization = account.organization
+      this.otherOrganization = otherAccount.organization
+    })
+
+    it.skip('updates a <%= Singular %> with payload and returns the updated data', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>({ idOrganization: this.organization.id }).insert()
+
+      // const name = 'updated name'
+
+      const response = await this.app.inject({
+        method: 'PUT',
+        url: '/<%= plural %>/' + test<%= Singular %>.id,
+        cookies: {
+          token: this.token,
+        },
+        body: {
+          // payload goes here
+          // name,
+        },
+      })
+
+      assert.strictEqual(response.statusCode, 200)
+      assert.deepInclude(response.json(), {
+        id: test<%= Singular %>.id,
+        // check for updated values
+        // name
+      })
+    })
+
+    it.skip('does not update a <%= Singular %> that belongs to another organization', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>({ idOrganization: this.otherOrganization.id }).insert()
+
+      // const name = 'updated name'
+
+      const response = await this.app.inject({
+        method: 'PUT',
+        url: '/<%= plural %>/' + test<%= Singular %>.id,
+        cookies: {
+          token: this.token,
+        },
+        body: {
+          // payload goes here
+          name
+        },
+      })
+
+      // fetch record from db to compare changes made
+      const fetchedRecord = await services.<%= singular %>.fetch({
+        id: test<%= Singular %>.id,
+        idOrganization: this.otherOrganization.id,
+      })
+
+      assert.strictEqual(response.statusCode, 200)
+      // does not return the object
+      assert.deepInclude(response.json(), {})
+      // test record was not updated
+      //assert.strictEqual(fetchedRecord[0].name, test<%= Singular %>.name)
+      //assert.notStrictEqual(fetchedRecord[0].name, name)
+    })
+  })
+
+  describe('DELETE:/{id<%= Singular %>}', function () {
+    before(async function () {
+      const account = await this.initializeAccountSession()
+      const otherAccount = await this.initializeAccountSession()
+
+      this.token = account.token
+      this.organization = account.organization
+      this.otherOrganization = otherAccount.organization
+    })
+
+    it.skip('deletes the <%= singular %> when visible to the session', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>({ idOrganization: await this.organization.id }).insert()
+
+      const response = await this.app.inject({
+        method: 'DELETE',
+        url: '/<%= plural %>/' + test<%= Singular %>.id,
+        cookies: {
+          token: this.token,
+        },
+      })
+
+      assert.strictEqual(response.statusCode, 200)
+    })
+
+    it.skip('does not delete a <%= singular %> that is not visible to the session', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>({ idOrganization: this.otherOrganization.id }).insert()
+
+      const response = await this.app.inject({
+        method: 'DELETE',
+        url: '/<%= plural %>/' + test<%= Singular %>.id,
+        cookies: {
+          token: this.token,
+        },
+      })
+
+      assert.strictEqual(response.statusCode, 400)
+    })
+  })
+})

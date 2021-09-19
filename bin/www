@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+
+const build = require('../api/src/index.js')
+const { PORT, LISTEN, FILE_MAX_SIZE } = process.env
+
+const config = {
+  logger: true,
+  bodyLimit: Number(FILE_MAX_SIZE),
+}
+
+async function start () {
+  try {
+    const app = await build(config)
+    app.listen(PORT, LISTEN)
+  } catch (err) {
+    console.error(err)
+    process.exit(1)
+  }
+}
+
+start()

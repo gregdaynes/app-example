@@ -1,0 +1,97 @@
+---
+to: api/src/routes/<%= h.changeCase.paramCase(h.inflection.pluralize(name)) %>.js
+---
+<%
+  plural = h.changeCase.camelCase(h.inflection.pluralize(name))
+  Plural = h.changeCase.pascalCase(h.inflection.pluralize(Name))
+  singular = h.changeCase.camelCase(h.inflection.singularize(name))
+  Singular = h.changeCase.pascalCase(h.inflection.singularize(Name))
+%>const S = require('fluent-json-schema')
+const fastifyPlugin = require('fastify-plugin')
+const { create, fetch, update, destroy } = require('@aftercoffee/app').services.<%= singular %>
+
+const <%= singular %>Schema = S.object()
+  .prop('id', S.string().format(S.FORMATS.UUID))
+  .prop('createdAt', S.string().format(S.FORMATS.DATE_TIME))
+  .prop('updatedAt', S.string().format(S.FORMATS.DATE_TIME))
+
+module.exports = fastifyPlugin(async (app) => {
+  app.post('/<%= plural %>', {
+    schema: {
+      body: S.object(),
+      response: {
+        200: <%= singular %>Schema,
+      },
+    },
+    handler (request, reply) {
+      return create({
+        ...request.body,
+        ...request.user,
+      })
+    },
+  })
+
+  app.get('/<%= plural %>', {
+    schema: {
+      response: {
+        200: S.array()
+          .items(<%= singular %>Schema),
+      },
+    },
+    handler (request, reply) {
+      return fetch({ ...request.user })
+    },
+  })
+
+  app.get('/<%= plural %>/:id<%= Singular %>', {
+    schema: {
+      response: {
+        200: <%= singular %>Schema,
+      },
+    },
+    async handler (request, reply) {
+      const [<%= singular %>] = await fetch({
+        id: request.params.id<%= Singular %>,
+        deleted: true,
+        ...request.user,
+      })
+
+      return { ...<%= singular %> }
+    },
+  })
+
+  app.put('/<%= plural %>/:id<%= Singular %>', {
+    schema: {
+      response: {
+        200: <%= singular %>Schema,
+      },
+    },
+    async handler (request, reply) {
+      const [<%= singular %>] = await update({
+        id: request.params.id<%= Singular %>,
+        ...request.body,
+        ...request.user,
+      })
+
+      return { ...<%= singular %> }
+    },
+  })
+
+  app.delete('/<%= plural %>/:id<%= Singular %>', {
+    schema: {
+      response: {
+        200: S.null(),
+      },
+    },
+    async handler (request, reply) {
+      const results = await destroy({
+        id: request.params.id<%= Singular %>,
+        ...request.user,
+      })
+
+      if (!results) reply.code(400)
+
+      return {}
+    },
+  })
+})

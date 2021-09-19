@@ -1,0 +1,905 @@
+'use strict'
+
+// Fork of https://github.com/griffinpp/objection-soft-delete
+// Repository & module no longer maintained, MIT License
+//
+// Tests below remain largly unchanged, except-for
+// - linting rules
+// - .eager -> .withGraphFetched due to deprecation
+
+const sutFactory = require('./soft-delete')
+const Model = require('objection').Model
+const Knex = require('knex')
+const expect = require('chai').expect
+
+let beforeSoftDelete
+let afterSoftDelete
+let beforeUndelete
+let afterUndelete
+
+function resetLifecycleChecks () {
+  beforeSoftDelete = false
+  afterSoftDelete = false
+  beforeUndelete = false
+  afterUndelete = false
+}
+
+function getModel (options) {
+  const sut = sutFactory(options)
+
+  return class TestObject extends sut(Model) {
+    static get tableName () {
+      return 'TestObjects'
+    }
+
+    $beforeDelete (queryContext) {
+      super.$beforeDelete(queryContext)
+    }
+
+    $afterDelete (queryContext) {
+      super.$afterDelete(queryContext)
+    }
+
+    $beforeUpdate (opts, queryContext) {
+      super.$beforeUpdate(opts, queryContext)
+      if (queryContext.softDelete) {
+        beforeSoftDelete = true
+      } else if (queryContext.undelete) {
+        beforeUndelete = true
+      }
+    }
+
+    $afterUpdate (opts, queryContext) {
+      super.$afterUpdate(opts, queryContext)
+      if (queryContext.softDelete) {
+        afterSoftDelete = true
+      } else if (queryContext.undelete) {
+        afterUndelete = true
+      }
+    }
+  }
+}
+
+function overriddenValues (knex) {
+  return {
+    columnName: 'deleted_at',
+    deletedValue: () => knex.raw('STRFTIME(\'%Y-%m-%d %H:%M:%fZ\', \'NOW\')'),
+    notDeletedValue: null,
+  }
+}
+
+function createDeletedAtColumn (knex) {
+  return knex.schema.table('TestObjects', (table) => {
+    table.timestamp('deleted_at')
+  })
+}
+
+function removeDeletedAtColumn (knex) {
+  return knex.schema.table('TestObjects', (table) => {
+    table.dropColumn('deleted_at')
+  })
+}
+
+describe('Soft Delete plugin tests', () => {
+  let knex
+
+  before(() => {
+    knex = Knex({
+      client: 'sqlite3',
+      useNullAsDefault: true,
+      connection: {
+        filename: ':memory:',
+      },
+    })
+  })
+
+  before(() => {
+    return knex.schema.createTable('TestObjects', (table) => {
+      table.increments('id').primary()
+      table.string('name')
+      table.boolean('deleted')
+      table.boolean('inactive')
+    })
+      .createTable('RelatedObjects', (table) => {
+        table.increments('id').primary()
+        table.string('name')
+        table.boolean('deleted')
+      })
+      .createTable('JoinTable', (table) => {
+        table.increments('id').primary()
+        table.integer('testObjectId')
+          .unsigned()
+          .references('id')
+          .inTable('TestObjects')
+        table.integer('relatedObjectId')
+          .unsigned()
+          .references('id')
+          .inTable('RelatedObjects')
+      })
+  })
+
+  after(() => {
+    return knex.schema.dropTable('JoinTable')
+      .dropTable('TestObjects')
+      .dropTable('RelatedObjects')
+  })
+
+  after(() => {
+    return knex.destroy()
+  })
+
+  beforeEach(() => {
+    resetLifecycleChecks()
+    return knex('TestObjects').insert([
+      {
+        id: 1,
+        name: 'Test Object 1',
+        deleted: 0,
+        inactive: 0,
+      },
+      {
+        id: 2,
+        name: 'Test Object 2',
+        deleted: 0,
+        inactive: 0,
+      },
+    ])
+      .then(() => {
+        return knex('RelatedObjects').insert([
+          {
+            id: 1,
+            name: 'RelatedObject 1',
+            deleted: 0,
+          },
+        ])
+      })
+      .then(() => {
+        return knex('JoinTable').insert([
+          {
+            testObjectId: 1,
+            relatedObjectId: 1,
+          },
+          {
+            testObjectId: 2,
+            relatedObjectId: 1,
+          },
+        ])
+      })
+  })
+
+  afterEach(() => {
+    return knex('JoinTable').delete()
+      .then(() => { return knex('TestObjects').delete() })
+      .then(() => { return knex('RelatedObjects').delete() })
+  })
+
+  describe('.delete() or .del()', () => {
+    it('should set the "softDelete" flag in the queryContext of lifecycle functions', () => {
+      const TestObject = getModel()
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        .del()
+        // eslint-disable-next-line
+        .then(() => {
+          expect(beforeSoftDelete).to.equal(true, 'before queryContext not set')
+          expect(afterSoftDelete).to.equal(true, 'after queryContext not set')
+        })
+    })
+    describe('when a columnName was not specified', () => {
+      it('should set the "deleted" column to true for any matching records', () => {
+        const TestObject = getModel()
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .del()
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            expect(result.deleted).to.equal(1, 'row not marked deleted')
+          })
+      })
+    })
+    describe('when a columnName was specified', () => {
+      it('should set that columnName to true for any matching records', () => {
+        const TestObject = getModel({ columnName: 'inactive' })
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .del()
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            expect(result.inactive).to.equal(1, 'row not marked deleted')
+          })
+      })
+    })
+    describe('when used with .$query()', () => {
+      it('should still mark the row deleted', () => {
+        // not sure if this will work...
+        const TestObject = getModel({ columnName: 'inactive' })
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .first()
+          .then((result) => {
+            return result.$query(knex).del()
+          })
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            expect(result.inactive).to.equal(1, 'row not marked deleted')
+          })
+      })
+    })
+
+    describe('when deletedValue and nonDeletedValue are overridden', () => {
+      before(() => { return createDeletedAtColumn(knex) })
+      after(() => { return removeDeletedAtColumn(knex) })
+
+      it('should set the "deleted" column to the set value', () => {
+        const now = new Date()
+        const TestObject = getModel(overriddenValues(knex))
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .del()
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            const deletedAt = new Date(result.deleted_at)
+            expect(deletedAt).to.be.gt(now, 'row not marked deleted')
+          })
+      })
+    })
+  })
+
+  describe('.hardDelete()', () => {
+    it('should remove the row from the database', () => {
+      const TestObject = getModel({ columnName: 'inactive' })
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        .hardDelete()
+        .then(() => {
+          return TestObject.query(knex)
+            .where('id', 1)
+            .first()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          // eslint-disable-next-line
+          expect(result).to.be.undefined
+        })
+    })
+    describe('when used with .$query()', () => {
+      it('should remove the row from the database', () => {
+        const TestObject = getModel({ columnName: 'inactive' })
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .first()
+          .then((result) => {
+            return result.$query(knex)
+              .hardDelete()
+          })
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            // eslint-disable-next-line
+            expect(result).to.be.undefined;
+          })
+      })
+    })
+
+    describe('when deletedValue and nonDeletedValue are overridden', () => {
+      before(() => { return createDeletedAtColumn(knex) })
+      after(() => { return removeDeletedAtColumn(knex) })
+
+      it('should remove the row from the database', () => {
+        const TestObject = getModel(overriddenValues(knex))
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .hardDelete()
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            // eslint-disable-next-line
+            expect(result).to.be.undefined;
+          })
+      })
+    })
+  })
+
+  describe('.undelete()', () => {
+    it('should set the "undelete" flag in the queryContext of lifecycle functions', () => {
+      const TestObject = getModel()
+
+      // soft delete the row
+      return TestObject.query(knex)
+        .where('id', 1)
+        .del()
+        .then(() => {
+          // now undelete the previously deleted row
+          return TestObject.query(knex)
+            .where('id', 1)
+            .undelete()
+        })
+        // eslint-disable-next-line
+        .then(() => {
+          expect(beforeUndelete).to.equal(true, 'before queryContext not set')
+          expect(afterUndelete).to.equal(true, 'after queryContext not set')
+        })
+    })
+    it('should set the configured delete column to false for any matching records', () => {
+      const TestObject = getModel()
+
+      // soft delete the row
+      return TestObject.query(knex)
+        .where('id', 1)
+        .del()
+        .then(() => {
+          // now undelete the previously deleted row
+          return TestObject.query(knex)
+            .where('id', 1)
+            .undelete()
+        })
+        .then(() => {
+          // and verify
+          return TestObject.query(knex)
+            .where('id', 1)
+            .first()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          expect(result.deleted).to.equal(0, 'row not undeleted')
+        })
+    })
+
+    describe('when deletedValue and nonDeletedValue are overridden', () => {
+      before(() => { return createDeletedAtColumn(knex) })
+      after(() => { return removeDeletedAtColumn(knex) })
+
+      it('should set the configured delete column to notDeletedValue for any matching records',
+        () => {
+          const TestObject = getModel(overriddenValues(knex))
+
+          return TestObject.query(knex)
+            .where('id', 1)
+            .del()
+            .then(() => {
+              // now undelete the previously deleted row
+              return TestObject.query(knex)
+                .where('id', 1)
+                .undelete()
+            })
+            .then(() => {
+              // and verify
+              return TestObject.query(knex)
+                .where('id', 1)
+                .first()
+            })
+            // eslint-disable-next-line
+            .then((result) => {
+              expect(result.deleted_at).to.equal(null, 'row not undeleted')
+            })
+        })
+    })
+
+    describe('when used with .$query()', () => {
+      it('should set the configured delete column to false for the matching record', () => {
+        const TestObject = getModel()
+
+        // soft delete the row
+        return TestObject.query(knex)
+          .where('id', 1)
+          .del()
+          .then(() => {
+            // get the deleted row
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first()
+          })
+          .then((result) => {
+            // undelete the row
+            return result.$query(knex)
+              .undelete()
+          })
+          .then(() => {
+            // and verify
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            expect(result.deleted).to.equal(0, 'row not undeleted')
+          })
+      })
+    })
+  })
+
+  describe('a normal update', () => {
+    it('should not set any queryContext flags', () => {
+      const TestObject = getModel()
+
+      // soft delete the row
+      return TestObject.query(knex)
+        .where('id', 1)
+        .patch({ name: 'edited name' })
+        // eslint-disable-next-line
+        .then(() => {
+          expect(beforeSoftDelete).to.equal(
+            false,
+            'before softDelete queryContext set incorrectly',
+          )
+          expect(afterSoftDelete).to.equal(false, 'after softDelete queryContext set incorrectly')
+          expect(beforeUndelete).to.equal(false, 'before undelete queryContext set incorrectly')
+          expect(afterUndelete).to.equal(false, 'after undelete queryContext set incorrectly')
+        })
+    })
+  })
+
+  describe('.whereNotDeleted()', () => {
+    function whereNotDeletedRelationshipTest (TestObject) {
+      // define the relationship to the TestObjects table
+      const RelatedObject = class RelatedObject extends Model {
+        static get tableName () {
+          return 'RelatedObjects'
+        }
+
+        static get relationMappings () {
+          return {
+            testObjects: {
+              relation: Model.ManyToManyRelation,
+              modelClass: TestObject,
+              join: {
+                from: 'RelatedObjects.id',
+                through: {
+                  from: 'JoinTable.relatedObjectId',
+                  to: 'JoinTable.testObjectId',
+                },
+                to: 'TestObjects.id',
+              },
+              filter: (f) => {
+                f.whereNotDeleted()
+              },
+            },
+          }
+        }
+      }
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        // soft delete one test object
+        .del()
+        .then(() => {
+          return RelatedObject.query(knex)
+            .where('id', 1)
+            // use the predefined filter
+            .withGraphFetched('testObjects')
+            .first()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          expect(result.testObjects.length).to.equal(
+            1,
+            'withGraphFetched returns not filtered properly',
+          )
+          expect(result.testObjects[0].id).to.equal(2, 'wrong result returned')
+        })
+    }
+
+    it('should cause deleted rows to be filterd out of the main result set', () => {
+      const TestObject = getModel()
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        .del()
+        .then(() => {
+          return TestObject.query(knex)
+            .whereNotDeleted()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          const anyDeletedExist = result.reduce((acc, obj) => {
+            return acc || obj.deleted === 1
+          }, false)
+          expect(anyDeletedExist).to.equal(
+            false,
+            'a deleted record was included in the result set',
+          )
+        })
+    })
+    it('should still work when a different columnName was specified', () => {
+      const TestObject = getModel({ columnName: 'inactive' })
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        .del()
+        .then(() => {
+          return TestObject.query(knex)
+            .whereNotDeleted()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          const anyDeletedExist = result.reduce((acc, obj) => {
+            return acc || obj.inactive === 1
+          }, false)
+          expect(anyDeletedExist).to.equal(
+            false,
+            'a deleted record was included in the result set',
+          )
+        })
+    })
+    it('should work inside a relationship filter', () => {
+      const TestObject = getModel()
+      return whereNotDeletedRelationshipTest(TestObject)
+    })
+
+    describe('when deletedValue and nonDeletedValue are overridden', () => {
+      before(() => { return createDeletedAtColumn(knex) })
+      after(() => { return removeDeletedAtColumn(knex) })
+
+      it('should cause deleted rows to be filtered out of the main result set', () => {
+        const TestObject = getModel(overriddenValues(knex))
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .del()
+          .then(() => {
+            return TestObject.query(knex)
+              .whereNotDeleted()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            const anyDeletedExist = result.reduce((acc, obj) => {
+              return acc || obj.deleted_at !== null
+            }, false)
+            expect(anyDeletedExist).to.equal(
+              false,
+              'a deleted record was included in the result set',
+            )
+          })
+      })
+
+      it('should work inside a relationship filter', () => {
+        const TestObject = getModel(overriddenValues(knex))
+        return whereNotDeletedRelationshipTest(TestObject)
+      })
+    })
+  })
+
+  describe('.whereDeleted()', () => {
+    function whereDeletedRelationhipTest (TestObject) {
+      // define the relationship to the TestObjects table
+      const RelatedObject = class RelatedObject extends Model {
+        static get tableName () {
+          return 'RelatedObjects'
+        }
+
+        static get relationMappings () {
+          return {
+            testObjects: {
+              relation: Model.ManyToManyRelation,
+              modelClass: TestObject,
+              join: {
+                from: 'RelatedObjects.id',
+                through: {
+                  from: 'JoinTable.relatedObjectId',
+                  to: 'JoinTable.testObjectId',
+                },
+                to: 'TestObjects.id',
+              },
+              filter: (f) => {
+                f.whereDeleted()
+              },
+            },
+          }
+        }
+      }
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        // soft delete one test object
+        .del()
+        .then(() => {
+          return RelatedObject.query(knex)
+            .where('id', 1)
+            // use the predefined filter
+            .withGraphFetched('testObjects')
+            .first()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          expect(result.testObjects.length).to.equal(
+            1,
+            'withGraphFetched returns not filtered properly',
+          )
+          expect(result.testObjects[0].id).to.equal(1, 'wrong result returned')
+        })
+    }
+
+    it('should cause only deleted rows to appear in the result set', () => {
+      const TestObject = getModel()
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        .del()
+        .then(() => {
+          return TestObject.query(knex)
+            .whereDeleted()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          const allDeleted = result.reduce((acc, obj) => {
+            return acc && obj.deleted === 1
+          }, true)
+          expect(allDeleted).to.equal(true, 'an undeleted record was included in the result set')
+        })
+    })
+    it('should still work when a different columnName was specified', () => {
+      const TestObject = getModel({ columnName: 'inactive' })
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        .del()
+        .then(() => {
+          return TestObject.query(knex)
+            .whereDeleted()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          const allDeleted = result.reduce((acc, obj) => {
+            return acc && obj.inactive === 1
+          }, true)
+          expect(allDeleted).to.equal(true, 'an undeleted record was included in the result set')
+        })
+    })
+    it('should work inside a relationship filter', () => {
+      const TestObject = getModel()
+      return whereDeletedRelationhipTest(TestObject)
+    })
+
+    describe('when deletedValue and nonDeletedValue are overridden', () => {
+      before(() => { return createDeletedAtColumn(knex) })
+      after(() => { return removeDeletedAtColumn(knex) })
+
+      it('should cause only deleted rows to appear in the result set', () => {
+        const TestObject = getModel(overriddenValues(knex))
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .del()
+          .then(() => {
+            return TestObject.query(knex)
+              .whereDeleted()
+          })
+          // eslint-disable-next-line
+          .then((result) => {
+            const allDeleted = result.reduce((acc, obj) => {
+              return acc && obj.deleted !== null
+            }, true)
+            expect(allDeleted).to.equal(true, 'a undeleted record was included in the result set')
+          })
+      })
+
+      it('should work inside a relationship filter', () => {
+        const TestObject = getModel(overriddenValues(knex))
+        return whereDeletedRelationhipTest(TestObject)
+      })
+    })
+  })
+
+  describe('the notDeleted filter', () => {
+    function notDeletedFilterTest (TestObject) {
+      // define the relationship to the TestObjects table
+      const RelatedObject = class RelatedObject extends Model {
+        static get tableName () {
+          return 'RelatedObjects'
+        }
+
+        static get relationMappings () {
+          return {
+            testObjects: {
+              relation: Model.ManyToManyRelation,
+              modelClass: TestObject,
+              join: {
+                from: 'RelatedObjects.id',
+                through: {
+                  from: 'JoinTable.relatedObjectId',
+                  to: 'JoinTable.testObjectId',
+                },
+                to: 'TestObjects.id',
+              },
+            },
+          }
+        }
+      }
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        // soft delete one test object
+        .del()
+        .then(() => {
+          return RelatedObject.query(knex)
+            .where('id', 1)
+            // use the predefined filter
+            .withGraphFetched('testObjects(notDeleted)')
+            .first()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          expect(result.testObjects.length).to.equal(
+            1,
+            'withGraphFetched returns not filtered properly',
+          )
+          expect(result.testObjects[0].id).to.equal(2, 'wrong result returned')
+        })
+    }
+
+    it(`should exclude any records that have been flagged on the configured column when used in a
+        .withGraphFetched() function call`, () => {
+      const TestObject = getModel()
+      return notDeletedFilterTest(TestObject)
+    })
+
+    describe('when deletedValue and nonDeletedValue are overridden', () => {
+      before(() => { return createDeletedAtColumn(knex) })
+      after(() => { return removeDeletedAtColumn(knex) })
+
+      it(`should exclude any records that have been flagged on the configured column when used in
+          a .withGraphFetched() function call`, () => {
+        const TestObject = getModel(overriddenValues(knex))
+        return notDeletedFilterTest(TestObject)
+      })
+    })
+  })
+  describe('the deleted filter', () => {
+    function deletedFilterTest (TestObject) {
+      // define the relationship to the TestObjects table
+      const RelatedObject = class RelatedObject extends Model {
+        static get tableName () {
+          return 'RelatedObjects'
+        }
+
+        static get relationMappings () {
+          return {
+            testObjects: {
+              relation: Model.ManyToManyRelation,
+              modelClass: TestObject,
+              join: {
+                from: 'RelatedObjects.id',
+                through: {
+                  from: 'JoinTable.relatedObjectId',
+                  to: 'JoinTable.testObjectId',
+                },
+                to: 'TestObjects.id',
+              },
+            },
+          }
+        }
+      }
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        // soft delete one test object
+        .del()
+        .then(() => {
+          return RelatedObject.query(knex)
+            .where('id', 1)
+            // use the predefined filter
+            .withGraphFetched('testObjects(deleted)')
+            .first()
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          expect(result.testObjects.length).to.equal(
+            1,
+            'withGraphFetched returns not filtered properly',
+          )
+          expect(result.testObjects[0].id).to.equal(1, 'wrong result returned')
+        })
+    }
+
+    it(`should only include any records that have been flagged on the configured column when used
+        in a .withGraphFetched() function call`, () => {
+      const TestObject = getModel()
+      return deletedFilterTest(TestObject)
+    })
+
+    describe('when deletedValue and nonDeletedValue are overridden', () => {
+      before(() => { return createDeletedAtColumn(knex) })
+      after(() => { return removeDeletedAtColumn(knex) })
+
+      it(`should only include any records that have been flagged on the configured column when
+          used in a .withGraphFetched() function call`, () => {
+        const TestObject = getModel(overriddenValues(knex))
+        return deletedFilterTest(TestObject)
+      })
+    })
+  })
+
+  describe('models with different columnNames', () => {
+    it('should use the correct columnName for each model', () => {
+      const TestObject = getModel({ columnName: 'inactive' })
+
+      // define the relationship to the TestObjects table
+      const RelatedObject = class RelatedObject extends sutFactory()(Model) {
+        static get tableName () {
+          return 'RelatedObjects'
+        }
+
+        static get relationMappings () {
+          return {
+            testObjects: {
+              relation: Model.ManyToManyRelation,
+              modelClass: TestObject,
+              join: {
+                from: 'RelatedObjects.id',
+                through: {
+                  from: 'JoinTable.relatedObjectId',
+                  to: 'JoinTable.testObjectId',
+                },
+                to: 'TestObjects.id',
+              },
+            },
+          }
+        }
+      }
+
+      return TestObject.query(knex)
+        .where('id', 1)
+        .del()
+        .then(() => {
+          return RelatedObject.query(knex)
+            .whereNotDeleted()
+            .withGraphFetched('testObjects(notDeleted)')
+        })
+        // eslint-disable-next-line
+        .then((result) => {
+          expect(result[0].deleted).to.equal(0, 'deleted row included in base result')
+          expect(result[0].testObjects.length).to.equal(
+            1,
+            'wrong number of withGraphFetched relations loaded',
+          )
+          expect(result[0].testObjects[0].inactive).to.equal(
+            0,
+            'deleted row included in withGraphFetched relations',
+          )
+        })
+    })
+  })
+
+  describe('soft delete indicator', () => {
+    it('should set isSoftDelete property', () => {
+      // eslint-disable-next-line no-unused-expressions
+      expect(getModel().isSoftDelete).to.be.true
+    })
+  })
+})

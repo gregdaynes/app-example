@@ -1,0 +1,691 @@
+{
+  "info": {
+    "name": "lesson-scripter.paw",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "session",
+      "item": [
+        {
+          "name": "create",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{URI}}/session",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/session"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"email\":\"seed@example.com\",\"password\":\"password\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{URI}}/session",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/session"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        }
+      ],
+      "protocolProfileBehavior": null,
+      "response": []
+    },
+    {
+      "name": "folders",
+      "item": [
+        {
+          "name": "list",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{URI}}/folders",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/folders"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [],
+            "body": null,
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "create",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{URI}}/folders",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/folders"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"testing\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "get",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{URI}}/folders/e9113898-50df-4df9-86a4-e9fb7e402024",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/folders/e9113898-50df-4df9-86a4-e9fb7e402024"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"testing\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{URI}}/folders/e9113898-50df-4df9-86a4-e9fb7e402024",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/folders/e9113898-50df-4df9-86a4-e9fb7e402024"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"new updated name\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{URI}}/folders/e9113898-50df-4df9-86a4-e9fb7e402024",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/folders/e9113898-50df-4df9-86a4-e9fb7e402024"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        }
+      ],
+      "protocolProfileBehavior": null,
+      "response": []
+    },
+    {
+      "name": "project",
+      "item": [
+        {
+          "name": "list",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{URI}}/projects",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/projects"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [],
+            "body": null,
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "create",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{URI}}/projects",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/projects"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"testing\",\"info\":\"testing\",\"idFolder\":null}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "get",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{URI}}/projects/c0913baa-e16e-400d-a696-05d1ba1ea2f4",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/projects/c0913baa-e16e-400d-a696-05d1ba1ea2f4"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"testing\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{URI}}/projects/c0913baa-e16e-400d-a696-05d1ba1ea2f4",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/projects/c0913baa-e16e-400d-a696-05d1ba1ea2f4"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"updated name\",\"info\":\"updated info\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{URI}}/projects/c0913baa-e16e-400d-a696-05d1ba1ea2f4",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/projects/c0913baa-e16e-400d-a696-05d1ba1ea2f4"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"testing\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        }
+      ],
+      "protocolProfileBehavior": null,
+      "response": []
+    },
+    {
+      "name": "organization",
+      "item": [
+        {
+          "name": "list",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{URI}}/organizations",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/organizations"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [],
+            "body": null,
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "get",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{URI}}/organizations/5938b5a3-a1ec-4dfe-9598-2fd6cf496b75",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/organizations/5938b5a3-a1ec-4dfe-9598-2fd6cf496b75"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"testing\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{URI}}/organizations/5938b5a3-a1ec-4dfe-9598-2fd6cf496b75",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/organizations/5938b5a3-a1ec-4dfe-9598-2fd6cf496b75"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"updated name\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{URI}}/organizations/5938b5a3-a1ec-4dfe-9598-2fd6cf496b75",
+              "query": null,
+              "protocol": null,
+              "host": [
+                "{{URI}}/organizations/5938b5a3-a1ec-4dfe-9598-2fd6cf496b75"
+              ],
+              "port": null,
+              "path": null
+            },
+            "description": "",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "disabled": false,
+              "raw": "{\"name\":\"testing\"}"
+            },
+            "auth": null
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "followOriginalHttpMethod": false,
+            "followAuthorizationHeader": false
+          },
+          "response": []
+        }
+      ],
+      "protocolProfileBehavior": null,
+      "response": []
+    },
+    {
+      "name": "file upload",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{URI}}/assets",
+          "query": null,
+          "protocol": null,
+          "host": [
+            "{{URI}}/assets"
+          ],
+          "port": null,
+          "path": null
+        },
+        "description": "",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "multipart/form-data",
+            "disabled": false,
+            "description": null
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "disabled": false,
+          "formdata": [
+            {
+              "key": "file",
+              "disabled": false,
+              "type": "file",
+              "description": null,
+              "src": null
+            },
+            {
+              "key": "idProject",
+              "value": "4c09f653-0857-428a-b317-d517793bef57",
+              "disabled": false,
+              "type": "text",
+              "description": null
+            },
+            {
+              "key": "idAsset",
+              "value": "802f484a-db8c-4471-89a2-741d8ff05217",
+              "disabled": false,
+              "type": "text",
+              "description": null
+            }
+          ]
+        },
+        "auth": null
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false,
+        "followOriginalHttpMethod": false,
+        "followAuthorizationHeader": false
+      },
+      "response": []
+    },
+    {
+      "name": "file fetch",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{URI}}/assets/802f484a-db8c-4471-89a2-741d8ff05217",
+          "query": null,
+          "protocol": null,
+          "host": [
+            "{{URI}}/assets/802f484a-db8c-4471-89a2-741d8ff05217"
+          ],
+          "port": null,
+          "path": null
+        },
+        "description": "",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false,
+            "description": null
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "disabled": false,
+          "raw": "{}"
+        },
+        "auth": null
+      },
+      "protocolProfileBehavior": {
+        "followRedirects": false,
+        "followOriginalHttpMethod": false,
+        "followAuthorizationHeader": false
+      },
+      "response": []
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+	"name": "app-example-cli",
+	"description": "Command Interface for App Example",
+	"version": "0.0.1",
+	"license": "MI",
+	"bin": {
+		"app-example-cli": "index.js"
+	},
+	"author": {
+		"name": "Gregory Daynes",
+		"email": "gregdaynes@gmail.com",
+		"url": "https://after.coffee"
+	},
+	"keywords": [
+		"Gregory Daynes"
+	],
+	"files": [
+		"index.js",
+		"utils"
+	],
+	"scripts": {},
+	"dependencies": {
+		"await-to-js": "^3.0.0",
+		"chalk": "^4.1.2",
+		"cli-alerts": "^1.2.2",
+		"cli-handle-error": "^4.4.0",
+		"cli-handle-unhandled": "^1.1.1",
+		"cli-meow-help": "^2.0.2",
+		"cli-should-cancel": "^1.0.3",
+		"cli-table": "^0.3.6",
+		"cli-welcome": "^2.2.2",
+		"enquirer": "^2.3.6",
+		"env-schema": "^3.3.0",
+		"fluent-json-schema": "^3.0.1",
+		"meow": "^9.0.0"
+	},
+	"devDependencies": {
+		"eslint": "^7.23.0",
+		"eslint-config-standard": "^16.0.2"
+	},
+	"prettier": {
+		"singleQuote": true,
+		"semi": false
+	}
+}

@@ -1,0 +1,4 @@
+{
+  "*.js": {"alternate": "{}.test.js"},
+  "*.test.js": {"alternate": "{}.js"}
+}

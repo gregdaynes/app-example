@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  db:
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+    networks:
+      - overlay
+    ports:
+      - "${DB_PORT}:3306"
+
+networks:
+  overlay:

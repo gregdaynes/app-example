@@ -1,0 +1,161 @@
+---
+to: app/src/services/<%= h.changeCase.paramCase(h.inflection.singularize(name)) %>.test.js
+---
+<%
+  plural = h.changeCase.camelCase(h.inflection.pluralize(name))
+  Plural = h.changeCase.pascalCase(h.inflection.pluralize(Name))
+  singular = h.changeCase.camelCase(h.inflection.singularize(name))
+  Singular = h.changeCase.pascalCase(h.inflection.singularize(Name))
+%>const { create, fetch, update, destroy } = require('./<%= h.changeCase.paramCase(h.inflection.singularize(name)) %>')
+const { database, assert, faker, factories, patterns } = require('../../test')
+
+describe('Services <%= Singular %>', function () {
+  before(async function () {
+    await database.setup()
+  })
+
+  after(async function () {
+    await database.teardown()
+  })
+
+  describe('create/1', function () {
+    it.skip('persists the <%= singular %> and returns the stored data', async function () {
+      const <%= singular %> = factories.<%= Singular %>()
+      const result = await create(<%= singular %>)
+
+      assert.match(result.id, patterns.uuid)
+      assert.deepInclude(result, <%= singular %>)
+    })
+
+    it.skip('does not intercept errors', async function () {
+      await assert.isRejected(create({ }))
+    })
+  })
+
+  describe('fetch/1', function () {
+    it.skip('returns an empty array if nothing found', async function () {
+      const results = await fetch({
+        id: 'does-not-exist',
+        idOrganization: faker.datatype.uuid(),
+      })
+
+      assert.typeOf(results, 'array')
+      assert.strictEqual(results.length, 0)
+    })
+
+    it.skip('returns a <%= singular %> by id', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>().insert()
+
+      const results = await fetch({
+        id: test<%= Singular %>.id,
+        idOrganization: test<%= Singular %>.idOrganization,
+      })
+
+      assert.typeOf(results, 'array')
+      assert.strictEqual(results[0].id, test<%= Singular %>.id)
+      assert.match(results[0].id, patterns.uuid)
+    })
+
+    it.skip('returns all <%= plural %> for ___', async function () {
+      const idOrganization = faker.datatype.uuid()
+      const test<%= Singular %>One = await factories.<%= Singular %>({
+        idOrganization,
+      }).insert()
+      const test<%= Singular %>Two = await factories.<%= Singular %>({
+        idOrganization,
+      }).insert()
+
+      const results = await fetch({
+        idOrganization,
+      })
+
+      assert.typeOf(results, 'array')
+      assert.strictEqual(results[0].id, test<%= Singular %>One.id)
+      assert.strictEqual(results[1].id, test<%= Singular %>Two.id)
+    })
+
+    it.skip('does not return deleted <%= plural %>', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>().insert()
+      await test<%= Singular %>.delete()
+
+      const results = await fetch({
+        id: test<%= Singular %>.id,
+        idOrganization: test<%= Singular %>.idOrganization,
+      })
+
+      assert.typeOf(results, 'array')
+      assert.deepEqual(results, [])
+    })
+
+    it.skip('has required parameters', async function () {
+      await assert.isRejected(fetch())
+    })
+
+    it.skip('returns deleted <%= plural %> when option deleted is true', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>().insert()
+      await test<%= Singular %>.delete()
+
+      const results = await fetch({
+        id: test<%= Singular %>.id,
+        idOrganization: test<%= Singular %>.idOrganization,
+        deleted: true,
+      })
+
+      assert.typeOf(results, 'array')
+      assert.isNotNull(results.deleted_at)
+      assert.deepInclude(results[0], {
+        id: test<%= Singular %>.id,
+      })
+    })
+  })
+
+  describe('update/1', function () {
+    it.skip('can update with new data and returns the <%= singular %> list', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>().insert()
+
+      // const name = 'updated name'
+
+      const results = await update({
+        id: test<%= Singular %>.id,
+        idOrganization: test<%= Singular %>.idOrganization,
+        // name,
+      })
+
+      assert.typeOf(results, 'array')
+      assert.strictEqual(results[0].id, test<%= Singular %>.id)
+      //assert.strictEqual(results[0].name, name)
+      //assert.notStrictEqual(results[0].name, test<%= Singular %>.name)
+    })
+  })
+
+  describe('destroy/1', function () {
+    it.skip('soft deletes the <%= singular %>', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>().insert()
+
+      const { id, idOrganization } = test<%= Singular %>
+      const results = await destroy({
+        id,
+        idOrganization,
+      })
+      const deletedResult = await fetch({
+        id,
+        idOrganization,
+        deleted: true,
+      })
+
+      assert.strictEqual(results, 1)
+      assert.isNotNull(deletedResult.deleted_at)
+    })
+
+    it.skip('does not delete a <%= Singular %> that does not match the idOrganization', async function () {
+      const test<%= Singular %> = await factories.<%= Singular %>().insert()
+
+      const results = await destroy({
+        id: test<%= Singular %>.id,
+        idOrganization: 'test-organization-id',
+      })
+
+      assert.strictEqual(results, 0)
+    })
+  })
+})

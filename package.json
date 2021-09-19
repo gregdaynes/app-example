@@ -1,0 +1,61 @@
+{
+  "name": "app-example",
+  "main": "index.js",
+  "scripts": {
+    "cli": "node --use_strict -r ./bin/envx ./cli/index.js",
+    "generate:api": "hygen api new",
+    "generate:scaffold": "hygen scaffold new",
+    "setup": "bin/setup",
+    "start:api": "nodemon --use_strict -r ./bin/envx ./bin/www",
+    "test": "NODE_ENV=test nyc node --use_strict -r ./bin/envx node_modules/.bin/mocha ./app/src/**/*.test.js ./api/src/**/*.test.js",
+    "test:ci": "NODE_ENV=test node --use_strict -r ./bin/envx node_modules/.bin/mocha ./app/src/**/*.test.js ./api/src/**/*.test.js  --reporter mocha-junit-reporter --reporter-options mochaFile=./junit.xml",
+    "test:api": "NODE_ENV=test nyc node --use_strict -r ./bin/envx node_modules/.bin/mocha ./api/src/**/*.test.js",
+    "test:api:ci": "NODE_ENV=test node --use_strict -r ./bin/envx node_modules/.bin/mocha ./api/src/**/*.test.js --reporter mocha-junit-reporter --reporter-options mochaFile=./api-junit.xml",
+    "test:app": "NODE_ENV=test nyc node --use_strict -r ./bin/envx node_modules/.bin/mocha ./app/src/**/*.test.js",
+    "test:app:ci": "NODE_ENV=test node --use_strict -r ./bin/envx node_modules/.bin/mocha ./app/src/**/*.test.js --reporter mocha-junit-reporter --reporter-options mochaFile=./app-junit.xml",
+    "db": "node --use_strict -r ./bin/envx ./app/node_modules/.bin/knex --knexfile ./knexfile.js"
+  },
+  "engines": {
+    "node": "v15.14.x"
+  },
+  "devDependencies": {
+    "eslint": "^7.23.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-clean-regex": "^0.5.1",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.3.1",
+    "eslint-plugin-security": "^1.4.0",
+    "hygen": "^6.0.4",
+    "lint-staged": "^10.5.4",
+    "mocha": "^9.1.0",
+    "mocha-junit-reporter": "^2.0.0",
+    "nodemon": "^2.0.12",
+    "nyc": "^15.1.0",
+    "simple-git-hooks": "^2.2.0"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged",
+    "pre-push": "npm run test:ci"
+  },
+  "lint-staged": {
+    "api/**/*.js": [
+      "npx eslint ./api/src/**/*.js --fix"
+    ],
+    "app/**/*.js": [
+      "npx eslint ./app/src/**/*.js --fix"
+    ],
+    "web/*.js": [
+      "npx eslint ./web/src/**/*.js --fix"
+    ]
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "dotenv-expand": "^5.1.0",
+    "env-schema": "^3.3.0",
+    "faker": "^5.5.3",
+    "fluent-json-schema": "^3.0.1",
+    "knex": "^0.95.10",
+    "mysql": "^2.18.1"
+  }
+}

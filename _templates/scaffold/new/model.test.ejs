@@ -1,0 +1,139 @@
+---
+to: app/src/models/<%= h.changeCase.paramCase(h.inflection.singularize(name)) %>.test.js
+---
+<%
+  plural = h.changeCase.camelCase(h.inflection.pluralize(name))
+  Plural = h.changeCase.pascalCase(h.inflection.pluralize(Name))
+  params = h.changeCase.paramCase(h.inflection.pluralize(name))
+  singular = h.changeCase.camelCase(h.inflection.singularize(name))
+  Singular = h.changeCase.pascalCase(h.inflection.singularize(Name))
+  param = h.changeCase.paramCase(h.inflection.singularize(name))
+%>const <%= Singular %> = require('./<%= param %>')
+const Organization = require('./organization')
+const { database, assert, factories, patterns } = require('../../test')
+
+describe('<%= Singular %>', function () {
+  before(async function () {
+    await database.setup()
+  })
+
+  after(async function () {
+    await database.teardown()
+  })
+
+  context('created <%= singular %>', function () {
+    before(async function () {
+      this.<%= singular %> = await <%= Singular %>.query().insert(factories.<%= Singular %>())
+    })
+
+    it.skip('has a uuid for id', function () {
+      assert.match(this.<%= singular %>.id, patterns.uuid)
+    })
+
+    it.skip('has a uuid for idOrganization', function () {
+      assert.match(this.<%= singular %>.idOrganization, patterns.uuid)
+    })
+  })
+
+  context('has required fields', function () {
+    it.skip('requires a field', async function () {
+      await assert.isRejected(<%= Singular %>.query().insert({}))
+    })
+
+    it.skip('has detailed validation messages for required field', async function () {
+      let validationErrors
+
+      try {
+        await <%= Singular %>.query().insert({})
+      } catch (err) {
+        validationErrors = Object.fromEntries(
+          err.message.split(', ').map((error) => error.split(':')),
+        )
+      }
+
+      assert.deepEqual(validationErrors, {
+        idOrganization: ' is a required property',
+      })
+    })
+  })
+
+  context('associations', function () {
+    before(async function () {
+      const organization = await factories.Organization()
+      const <%= singular %> = await factories.<%= Singular %>({
+        idOrganization: organization.id
+      }).insert()
+
+      this.testOrganization = await Organization.query().findById(organization.id)
+      this.test<%= Singular %> = await <%= Singular %>.query().findById(<%= singular %>.id)
+    })
+
+    it.skip('has a related organization through idOrganization', async function () {
+      assert.strictEqual(this.test<%= Singular %>.idOrganization, this.testOrganization.id)
+    })
+
+    it.skip('can eager load the organization when fetching a <%= singular %>', async function () {
+      const [<%= singular %>] = await <%= Singular %>.query()
+        .where('<%= plural %>.id', this.test<%= Singular %>.id)
+        .withGraphFetched('organization')
+
+      assert.deepInclude(<%= singular %>, this.test<%= Singular %>)
+      assert.deepInclude(<%= singular %>.organization, this.testOrganization)
+    })
+
+    it.skip('can eager load multiple association when fetching a <%= singular %>', async function () {
+      const [<%= singular %>] = await <%= Singular %>.query()
+        .where('<%= plural %>.id', this.test<%= Singular %>.id)
+        .withGraphFetched('organization')
+        // add another withGraphFetched
+
+      assert.deepInclude(<%= singular %>, this.test<%= Singular %>)
+      assert.deepInclude(<%= singular %>.organization, this.testOrganization)
+      // test another association if it exists
+    })
+  })
+
+  context('timestamps', function () {
+    before(async function () {
+      this.<%= singular %> = await <%= Singular %>.query().insert(factories.<%= Singular %>())
+    })
+
+    it.skip('has created_at and updated_at when inserting', async function () {
+      assert.isDefined(this.<%= singular %>.created_at)
+      assert.isDefined(this.<%= singular %>.updated_at)
+      assert.isUndefined(this.<%= singular %>.deleted_at)
+    })
+
+    it.skip('timestamps are camelCase when fetched', async function () {
+      const fetched<%= Singular %> = await <%= Singular %>.query().findById(this.<%= singular %>.id)
+
+      assert.isDefined(fetched<%= Singular %>.createdAt)
+      assert.isDefined(fetched<%= Singular %>.updatedAt)
+      assert.isNull(fetched<%= Singular %>.deletedAt)
+    })
+
+    it.skip('alters updated_at when updating a record', async function () {
+      const original<%= Singular %> = Object.assign({}, { ...this.<%= singular %> })
+
+      // const name = 'updated name'
+
+      await <%= Singular %>.query()
+        .patch({
+          // name
+        })
+        .where('id', this.<%= singular %>.id)
+
+      const updated<%= Singular %> = await <%= Singular %>.query().findById(this.<%= singular %>.id)
+
+      assert.notEqual(updated<%= Singular %>.updatedAt, original<%= Singular %>.updatedAt)
+      // assert.strictEqual(updated<%= Singular %> .name, name)
+    })
+
+    it.skip('populates deleted_at when deleting a record', async function () {
+      await <%= Singular %>.query().deleteById(this.<%= singular %>.id)
+      const deleted<%= Singular %> = await <%= Singular %>.query().findById(this.<%= singular %>.id)
+
+      assert.isDefined(deleted<%= Singular %>.deletedAt)
+    })
+  })
+})

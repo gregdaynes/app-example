@@ -1,0 +1,19 @@
+#!/bin/sh
+
+echo "== Setup =================================\n"
+
+echo "Installing Repo Modules..."
+rm -rf node_modules && npm install
+echo "\n------------------------------------------\n"
+
+echo "Installing API Modules..."
+cd api && rm -rf node_modules && npm install && cd -
+echo "\n------------------------------------------\n"
+
+echo "Installing App Modules..."
+cd app && rm -rf node_modules && npm install && cd -
+echo "\n------------------------------------------\n"
+
+echo "Installing CLI Modules..."
+cd cli && rm -rf node_modules && npm install && cd -
+echo "\n------------------------------------------\n"

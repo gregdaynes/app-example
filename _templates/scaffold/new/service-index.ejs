@@ -1,0 +1,6 @@
+---
+inject: true
+to: app/src/services/index.js
+append: true
+---
+exports.<%= h.changeCase.camelCase(h.inflection.singularize(name)) %> = require('./<%= h.changeCase.paramCase(h.inflection.singularize(name)) %>')
